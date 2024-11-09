@@ -1,0 +1,114 @@
+echo "##############################################"
+echo "### Welcome to use Seewo SK03B Root Script ###"
+echo "###  This Script was written by Admin_233  ###"
+echo "##############################################"
+
+binary_run_path="/data/local/tmp"
+script_path=$(cd $(dirname $0); pwd)
+target_disk="/dev/block/mmcblk0"
+
+cp $script_path/debugfs $binary_run_path/debugfs
+chmod 777 $binary_run_path/debugfs
+
+echo ""
+echo "[i]Dumping system, please wait."
+echo ""
+
+$binary_run_path/busybox dd if=$target_disk of=$script_path/system.img bs=512 skip=505856 count=5242880
+
+echo "cd /xbin" >> $script_path/debugfscommand
+echo "write $script_path/su su" >> $script_path/debugfscommand
+echo "set_inode_field /xbin/su mode 0100777" >> $script_path/debugfscommand
+
+echo "cd /xbin" >> $script_path/debugfscommand
+echo "write $script_path/su daemonsu" >> $script_path/debugfscommand
+echo "set_inode_field /xbin/daemonsu mode 0100777" >> $script_path/debugfscommand
+
+echo "cd /xbin" >> $script_path/debugfscommand
+echo "write $script_path/supolicy supolicy" >> $script_path/debugfscommand
+echo "set_inode_field /xbin/supolicy mode 0100777" >> $script_path/debugfscommand
+
+echo "cd /lib64" >> $script_path/debugfscommand
+echo "write $script_path/libsupol.so libsupol.so" >> $script_path/debugfscommand
+echo "set_inode_field /lib64/libsupol.so mode 0100777" >> $script_path/debugfscommand
+
+
+echo "dump_inode /bin/app_process64 $script_path/app_process64" >> $script_path/debugfscommand
+
+echo "cd /bin" >> $script_path/debugfscommand
+echo "write $script_path/app_process64 app_process64_original" >> $script_path/debugfscommand
+echo "set_inode_field /bin/app_process64_original mode 0100777" >> $script_path/debugfscommand
+
+echo "cd /bin" >> $script_path/debugfscommand
+echo "write $script_path/app_process64 app_process_init" >> $script_path/debugfscommand
+echo "set_inode_field /bin/app_process_init mode 0100777" >> $script_path/debugfscommand
+
+echo "rm /bin/app_process" >> $script_path/debugfscommand
+echo "rm /bin/app_process64" >> $script_path/debugfscommand
+
+echo "symlink /bin/app_process /system/xbin/daemonsu" >> $script_path/debugfscommand
+echo "symlink /bin/app_process64 /system/xbin/daemonsu" >> $script_path/debugfscommand
+
+echo ""
+echo "[i]Modifying filesystem"
+echo ""
+
+output=$($binary_run_path/debugfs -w -f $script_path/debugfscommand $script_path/system.img)
+echo $output
+
+image_size=$(stat -c %s "$script_path/system.img")
+spilt_times=$(( $image_size / 4194304 ))
+
+echo "$spilt_times"
+
+echo ""
+echo "[i]Comparing image"
+echo ""
+
+for i in $(seq 1 $spilt_times)
+do
+    offset_in_system=$(( (i - 1) * 8192 ))
+	offset_in_target_disk=$(( 505856 + offset_in_system ))
+    $binary_run_path/busybox dd if=$target_disk of=$script_path/cmp1.img bs=512 skip=$offset_in_target_disk count=8192 status=none
+    $binary_run_path/busybox dd if=$script_path/system.img of=$script_path/cmp2.img bs=512 skip=$offset_in_system count=8192 status=none 
+	
+	cmp -s $script_path/cmp1.img $script_path/cmp2.img
+	cmpresult=$?
+	echo "$i / $spilt_times, cmpresult $cmpresult"
+	
+	if [ "$cmpresult" = "1" ]
+	then
+	    echo "$offset_in_system different"
+		echo "$offset_in_system" >> $script_path/different_offsets
+    fi
+done
+
+
+
+for i in $(cat $script_path/different_offsets)
+do
+    echo ""
+    echo "[i]Flashing system offset $i"
+	echo ""
+	offset_in_target_disk=$(( 505856 + i ))
+	dd if=$script_path/system.img of=$target_disk bs=512 skip=$i seek=$offset_in_target_disk count=8192 conv=notrunc
+done
+
+echo ""
+echo "[i]Installing SuperSU app"
+echo ""
+
+pm install $script_path/Superuser.apk
+
+echo ""
+echo "[i]Clearing files"
+echo ""
+
+rm $script_path/app_process64
+rm $script_path/system.img
+rm $script_path/different_offsets
+rm $script_path/debugfscommand
+rm $script_path/cmp1.img
+rm $script_path/cmp2.img
+
+echo "[i]Finished! Please reboot your device."

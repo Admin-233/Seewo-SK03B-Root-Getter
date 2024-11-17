@@ -112,3 +112,4 @@ rm $script_path/debugfscommand
 rm $script_path/cmp1.img
 
 echo "[i]Finished! Please reboot your device."
+

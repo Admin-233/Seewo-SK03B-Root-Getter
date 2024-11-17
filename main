@@ -11,6 +11,12 @@ cp $script_path/debugfs $binary_run_path/debugfs
 chmod 777 $binary_run_path/debugfs
 
 echo ""
+echo "[i]Installing SuperSU app"
+echo ""
+
+pm install $script_path/Superuser.apk
+
+echo ""
 echo "[i]Dumping system, please wait."
 echo ""
 
@@ -93,12 +99,6 @@ do
 	offset_in_target_disk=$(( 505856 + i ))
 	dd if=$script_path/system.img of=$target_disk bs=512 skip=$i seek=$offset_in_target_disk count=8192 conv=notrunc
 done
-
-echo ""
-echo "[i]Installing SuperSU app"
-echo ""
-
-pm install $script_path/Superuser.apk
 
 echo ""
 echo "[i]Clearing files"

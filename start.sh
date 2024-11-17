@@ -5,4 +5,3 @@ cp $script_path/busybox $binary_run_path/busybox
 chmod 777 $binary_run_path/busybox
 
 $binary_run_path/busybox sh $script_path/main
-

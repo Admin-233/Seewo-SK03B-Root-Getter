@@ -75,10 +75,12 @@ for i in $(seq 1 $spilt_times)
 do
     offset_in_system=$(( (i - 1) * 8192 ))
 	offset_in_target_disk=$(( 505856 + offset_in_system ))
-    $binary_run_path/busybox dd if=$target_disk of=$script_path/cmp1.img bs=512 skip=$offset_in_target_disk count=8192 status=none
-    $binary_run_path/busybox dd if=$script_path/system.img of=$script_path/cmp2.img bs=512 skip=$offset_in_system count=8192 status=none 
 	
-	cmp -s $script_path/cmp1.img $script_path/cmp2.img
+	cmp -s \
+    <($binary_run_path/busybox dd if=$target_disk bs=512 skip=$offset_in_target_disk count=8192 status=none) \
+    <($binary_run_path/busybox dd if=$script_path/system.img bs=512 skip=$offset_in_system count=8192 status=none)
+	#In bash version of this script, Process Substitution can be used so no more temp file is needed.
+	
 	cmpresult=$?
 	echo "$i / $spilt_times, cmpresult $cmpresult"
 	
@@ -108,7 +110,5 @@ rm $script_path/app_process64
 rm $script_path/system.img
 rm $script_path/different_offsets
 rm $script_path/debugfscommand
-rm $script_path/cmp1.img
-rm $script_path/cmp2.img
 
 echo "[i]Finished! Please reboot your device."

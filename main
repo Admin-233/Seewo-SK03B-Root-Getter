@@ -99,7 +99,7 @@ do
     echo "[i]Flashing system offset $i"
 	echo ""
 	offset_in_target_disk=$(( 505856 + i ))
-	dd if=$script_path/system.img of=$target_disk bs=512 skip=$i seek=$offset_in_target_disk count=8192 conv=notrunc
+	$binary_run_path/busybox dd if=$script_path/system.img of=$target_disk bs=512 skip=$i seek=$offset_in_target_disk count=8192 conv=notrunc
 done
 
 echo ""

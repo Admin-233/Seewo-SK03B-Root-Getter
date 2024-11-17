@@ -77,11 +77,10 @@ do
 	offset_in_target_disk=$(( 505856 + offset_in_system ))
     $binary_run_path/busybox dd if=$target_disk of=$script_path/cmp1.img bs=512 skip=$offset_in_target_disk count=8192 status=none
 	$binary_run_path/busybox dd if=$script_path/system.img bs=512 skip=$offset_in_system count=8192 status=none \
-	
-	| cmp -s $script_path/cmp1.img -
+    | cmp -s $script_path/cmp1.img -
 	#Use pipe instead of saving to file to improve speed.
 	#However two pipes are needed while there is only one pipe available in one command.
-	#So a temp file is still needed
+	#So a temp file is still needed.
 	
 	cmpresult=$?
 	echo "$i / $spilt_times, cmpresult $cmpresult"
